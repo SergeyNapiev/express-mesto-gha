@@ -50,6 +50,10 @@ const updateUser = (req, res) => {
   const userId = req.user._id;
   const { name, about } = req.body;
 
+  if (!name || !about) {
+    return res.status(400).send({ message: 'Поле "name" и "about" обязательны для обновления' });
+  }
+
   if (name.length < 2 || name.length > 30) {
     return res.status(400).send({ message: 'Имя пользователя должно содержать от 2 до 30 символов' });
   }
