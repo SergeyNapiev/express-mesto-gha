@@ -28,9 +28,9 @@ const getUsers = (req, res) => {
 };
 
 const getUserById = (req, res) => {
-  const { _id } = req.params;
-  userModel.findById(_id)
+  userModel.findById(req.params.userId)
     .then((user) => {
+      console.log(user);
       if (!user) {
         return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
       }
@@ -38,9 +38,9 @@ const getUserById = (req, res) => {
     })
     .catch((err) => {
       // console.log(err);
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя' });
-      }
+      // if (err.name === 'CastError') {
+      //   return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      // }
       return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
