@@ -37,10 +37,10 @@ const getUserById = (req, res) => {
       return res.status(200).send(user);
     })
     .catch((err) => {
-      // console.log(err);
-      // if (err.name === 'CastError') {
-      //   return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя' });
-      // }
+      console.log(err);
+      if (err.name === 'CastError') {
+        return res.status(400).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      }
       return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
