@@ -63,15 +63,12 @@ const likeCard = (req, res) => {
       )
         .then((updatedCard) => {
           res.status(HTTP_STATUS.OK).json(updatedCard);
-        })
-        .catch((err) => {
-          if (err.name === 'CastError') {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
-          }
-          res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
         });
     })
     .catch((err) => {
+      if (err.name === 'CastError') {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+      }
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
     });
 };
@@ -90,15 +87,12 @@ const dislikeCard = (req, res) => {
       )
         .then((updatedCard) => {
           res.status(HTTP_STATUS.OK).json(updatedCard);
-        })
-        .catch((err) => {
-          if (err.name === 'CastError') {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
-          }
-          res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
         });
     })
     .catch((err) => {
+      if (err.name === 'CastError') {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+      }
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
     });
 };

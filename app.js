@@ -28,12 +28,12 @@ app.use((req, res, next) => {
 app.use(usersRouter);
 app.use(cardsRouter);
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found' });
+  res.status(404).json({ message: 'Not Found' });
 });
 
 app.use((err, req, res) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(500).json({ message: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {
