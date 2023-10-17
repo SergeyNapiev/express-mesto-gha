@@ -19,7 +19,7 @@ app.use(express.json());
 // хардкод авторизации
 app.use((req, res, next) => {
   req.user = {
-    _id: '652c549db0f96706315dd900', // вставлен _id созданного в предыдущем пункте пользователя
+    _id: '652c549db0f96706315dd900',
   };
 
   next();
@@ -27,6 +27,14 @@ app.use((req, res, next) => {
 
 app.use(usersRouter);
 app.use(cardsRouter);
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+app.use((err, req, res) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
