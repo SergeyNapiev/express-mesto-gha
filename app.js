@@ -29,11 +29,11 @@ app.use((req, res, next) => {
 
 app.use(appRouter);
 
-app.use((err, req, res) => {
-  console.error(err.stack);
+app.use((req, res) => {
   res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Not Found' });
 });
 
+// Обработчик ошибки "Internal Server Error"
 app.use((err, req, res) => {
   console.error(err.stack);
   res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
