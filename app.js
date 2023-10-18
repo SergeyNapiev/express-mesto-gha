@@ -1,14 +1,9 @@
-/* eslint-disable no-console */
-/* eslint-disable import/no-extraneous-dependencies */
 const express = require('express');
 const mongoose = require('mongoose');
-const usersRouter = require('./routes/users');
-const cardsRouter = require('./routes/cards');
+const appRouter = require('./routes/index');
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
-}).then(() => {
-  console.log('Connected to MongoDB');
 });
 
 const app = express();
@@ -16,6 +11,13 @@ const PORT = 3000;
 
 app.use(express.json());
 
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+};
 // хардкод авторизации
 app.use((req, res, next) => {
   req.user = {
@@ -25,15 +27,16 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(usersRouter);
-app.use(cardsRouter);
-app.use((req, res) => {
-  res.status(404).json({ message: 'Not Found' });
+app.use(appRouter);
+
+app.use((err, req, res) => {
+  console.error(err.stack);
+  res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Not Found' });
 });
 
 app.use((err, req, res) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Internal Server Error' });
+  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

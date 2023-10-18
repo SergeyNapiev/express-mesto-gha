@@ -1,7 +1,4 @@
-/* eslint-disable consistent-return */
-/* eslint-disable no-unused-vars */
-/* eslint-disable linebreak-style */
-/* eslint-disable no-console */
+const mongoose = require('mongoose');
 const cardModel = require('../models/card');
 
 const HTTP_STATUS = {
@@ -17,32 +14,31 @@ const createCard = (req, res) => {
   return cardModel.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS.CREATED).send(card))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof mongoose.Error.ValidationError) {
         return res.status(HTTP_STATUS.BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
       }
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка по умолчанию' });
     });
 };
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   cardModel.find({})
     .populate(['owner', 'likes'])
     .then((cards) => res.status(HTTP_STATUS.OK).send(cards))
     .catch((err) => {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка по умолчанию' });
+      next(err);
     });
 };
 
 const deleteCard = (req, res) => {
   cardModel.findByIdAndRemove(req.params.cardId)
-    .then((card) => {
-      if (!card) {
+    .orFail(new mongoose.Error.DocumentNotFoundError())
+    .then((card) => res.status(HTTP_STATUS.OK).send(card))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
         return res.status(HTTP_STATUS.NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена' });
       }
-      return res.status(HTTP_STATUS.OK).send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
+      if (err instanceof mongoose.Error.CastError) {
         return res.status(HTTP_STATUS.BAD_REQUEST).send({ message: 'Переданы некорректные данные карточки' });
       }
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка по умолчанию' });
@@ -50,50 +46,50 @@ const deleteCard = (req, res) => {
 };
 
 const likeCard = (req, res) => {
-  cardModel.findById(req.params.cardId)
-    .then((card) => {
-      if (!card) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
-      }
-
-      cardModel.findByIdAndUpdate(
-        req.params.cardId,
-        { $addToSet: { likes: req.user._id } },
-        { new: true, upsert: true },
-      )
-        .then((updatedCard) => {
-          res.status(HTTP_STATUS.OK).json(updatedCard);
-        });
+  cardModel.findByIdAndUpdate(
+    req.params.cardId,
+    { $addToSet: { likes: req.user._id } },
+    { new: true, runValidators: true },
+  )
+    .orFail(new mongoose.Error.DocumentNotFoundError())
+    .then((updatedCard) => {
+      res.status(HTTP_STATUS.OK).json(updatedCard);
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+      }
+      if (err instanceof mongoose.Error.CastError) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+      }
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
     });
 };
 
 const dislikeCard = (req, res) => {
-  cardModel.findById(req.params.cardId)
-    .then((card) => {
-      if (!card) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Передан несуществующий _id карточки' });
-      }
-
-      cardModel.findByIdAndUpdate(
-        req.params.cardId,
-        { $pull: { likes: req.user._id } },
-        { new: true, upsert: true },
-      )
-        .then((updatedCard) => {
-          res.status(HTTP_STATUS.OK).json(updatedCard);
-        });
+  cardModel.findByIdAndUpdate(
+    req.params.cardId,
+    { $pull: { likes: req.user._id } },
+    { new: true, runValidators: true },
+  )
+    .orFail(new mongoose.Error.DocumentNotFoundError())
+    .then((updatedCard) => {
+      res.status(HTTP_STATUS.OK).json(updatedCard);
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+      }
+      if (err instanceof mongoose.Error.CastError) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+      }
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
     });
 };
 
