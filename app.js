@@ -1,6 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const { celebrate, Joi, errors } = require('celebrate');
+
 const appRouter = require('./routes/index');
+const auth = require('./middlewares/auth');
+const NotFoundError = require('./errors/not-found-err');
+const regex = require('./models/regex');
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
@@ -10,32 +16,52 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 
-const HTTP_STATUS = {
-  OK: 200,
-  CREATED: 201,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_SERVER_ERROR: 500,
-};
-// хардкод авторизации
-app.use((req, res, next) => {
-  req.user = {
-    _id: '652c549db0f96706315dd900',
-  };
+const {
+  login,
+  createUser,
+} = require('./controllers/users');
 
-  next();
-});
-
+app.use(auth);
 app.use(appRouter);
 
-app.use((req, res) => {
-  res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Not Found' });
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().min(8).required(),
+  }),
+}), login);
+
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().pattern(regex),
+    email: Joi.string().required().email(),
+    password: Joi.string().min(8).required(),
+  }),
+}), createUser);
+
+app.use((req, res, next) => {
+  next(new NotFoundError('Internal Server Error'));
 });
 
-app.use((err, req, res) => {
-  console.error(err.stack);
-  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+app.use(errors());
+
+app.use((err, req, res, next) => {
+  // если у ошибки нет статуса, выставляем 500
+  const { statusCode = 500, message } = err;
+
+  res
+    .status(statusCode)
+    .send({
+      // проверяем статус и выставляем сообщение в зависимости от него
+      message: statusCode === 500
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
+  next();
 });
 
 app.listen(PORT, () => {

@@ -1,23 +1,24 @@
 const mongoose = require('mongoose');
 const cardModel = require('../models/card');
 
+const BadRequestError = require('../errors/bad-request-err');
+const NotFoundError = require('../errors/not-found-err');
+const ForbiddenError = require('../errors/forbidden-err');
+
 const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,
-  BAD_REQUEST: 400,
-  NOT_FOUND: 404,
-  INTERNAL_SERVER_ERROR: 500,
 };
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
   return cardModel.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS.CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
+        next(new BadRequestError('Переданы некорректные данные при создании карточки'));
       }
-      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка по умолчанию' });
+      next(err);
     });
 };
 
@@ -30,22 +31,32 @@ const getCards = (req, res, next) => {
     });
 };
 
-const deleteCard = (req, res) => {
-  cardModel.findByIdAndRemove(req.params.cardId)
+const deleteCard = (req, res, next) => {
+  cardModel.findById(req.params.cardId)
     .orFail(new mongoose.Error.DocumentNotFoundError())
-    .then((card) => res.status(HTTP_STATUS.OK).send(card))
+    .then((card) => {
+      if (!card.owner.equals(req.user._id)) {
+        throw new ForbiddenError('У вас нет прав на удаление этой карточки');
+      }
+      return cardModel.findByIdAndRemove(req.params.cardId);
+    })
+    .then((deletedCard) => {
+      if (deletedCard) {
+        res.status(HTTP_STATUS.OK).send(deletedCard);
+      }
+    })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(HTTP_STATUS.NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена' });
+        next(new NotFoundError('Карточка с указанным _id не найдена'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).send({ message: 'Переданы некорректные данные карточки' });
+        next(new BadRequestError('Переданы некорректные данные карточки'));
       }
-      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка по умолчанию' });
+      next(err);
     });
 };
 
-const likeCard = (req, res) => {
+const likeCard = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -57,16 +68,16 @@ const likeCard = (req, res) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+        next(new NotFoundError('Карточка с указанным _id не найдена'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+        next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
       }
-      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
+      next(err);
     });
 };
 
-const dislikeCard = (req, res) => {
+const dislikeCard = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
@@ -78,12 +89,12 @@ const dislikeCard = (req, res) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ message: 'Карточка с указанным _id не найдена' });
+        next(new NotFoundError('Карточка с указанным _id не найдена'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+        next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
       }
-      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Ошибка по умолчанию' });
+      next(err);
     });
 };
 

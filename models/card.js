@@ -1,5 +1,5 @@
-/* eslint-disable import/no-extraneous-dependencies */
 const mongoose = require('mongoose');
+const regex = require('./regex');
 
 const cardSchema = new mongoose.Schema({
   name: {
@@ -11,6 +11,12 @@ const cardSchema = new mongoose.Schema({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator(url) {
+        return regex.test(url);
+      },
+      message: 'Некорректный формат ссылки',
+    },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
