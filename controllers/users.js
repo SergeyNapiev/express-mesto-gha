@@ -49,7 +49,7 @@ const getUsers = (req, res, next) => {
 };
 
 const getUserById = (req, res, next) => {
-  userModel.findById(req.params.userId)
+  userModel.findById(req.params._id)
     .orFail(new mongoose.Error.DocumentNotFoundError())
     .then((user) => res.status(HTTP_STATUS.OK).send(user))
     .catch((err) => {
