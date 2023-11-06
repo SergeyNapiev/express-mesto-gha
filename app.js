@@ -23,9 +23,6 @@ const {
   createUser,
 } = require('./controllers/users');
 
-app.use(auth);
-app.use(appRouter);
-
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
@@ -43,11 +40,13 @@ app.post('/signup', celebrate({
   }),
 }), createUser);
 
-app.use((req, res, next) => {
-  next(new NotFoundError('Internal Server Error'));
-});
-
+app.use(auth);
+app.use(appRouter);
 app.use(errors());
+
+app.use((req, res, next) => {
+  next(new NotFoundError('Not Found'));
+});
 
 app.use((err, req, res, next) => {
   // если у ошибки нет статуса, выставляем 500

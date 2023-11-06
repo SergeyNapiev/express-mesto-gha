@@ -6,6 +6,7 @@ const userModel = require('../models/user');
 const BadRequestError = require('../errors/bad-request-err');
 const NotFoundError = require('../errors/not-found-err');
 const ConflictingRequestError = require('../errors/conflicting-request-err');
+const UnauthorizedError = require('../errors/unauthorized-err');
 
 const HTTP_STATUS = {
   OK: 200,
@@ -20,12 +21,14 @@ const createUser = (req, res, next) => {
     .then((hash) => userModel.create({
       name, about, avatar, email, password: hash, // записываем хеш в базу
     }))
-    .then((user) => res.status(HTTP_STATUS.CREATED).send({
-      name: user.name,
-      about: user.about,
-      avatar: user.avatar,
-      email: user.email,
-    }))
+    .then((user) => {
+      res.status(HTTP_STATUS.CREATED).send({
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+      });
+    })
     .catch((err) => {
       if (err.code === 11000) {
         next(new ConflictingRequestError('Пользователь с таким email уже существует'));
@@ -110,10 +113,10 @@ const login = (req, res, next) => {
         'some-secret-key',
         { expiresIn: '7d' },
       );
-      res.cookie('jwt', token, { httpOnly: true });
+      res.send({ token });
     })
-    .catch((err) => {
-      next(err);
+    .catch(() => {
+      next(new UnauthorizedError('Неправильные почта или пароль'));
     });
 };
 
@@ -121,6 +124,7 @@ const getUsersMe = (req, res, next) => {
   userModel.findById(req.user._id)
     .then((user) => res.send(user))
     .catch(next);
+  console.log(req.user._id);
 };
 
 module.exports = {
