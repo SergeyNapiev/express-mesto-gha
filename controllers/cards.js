@@ -17,8 +17,9 @@ const createCard = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         next(new BadRequestError('Переданы некорректные данные при создании карточки'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -41,18 +42,16 @@ const deleteCard = (req, res, next) => {
       return cardModel.findByIdAndRemove(req.params.cardId);
     })
     .then((deletedCard) => {
-      if (deletedCard) {
-        res.status(HTTP_STATUS.OK).send(deletedCard);
-      }
+      res.status(HTTP_STATUS.OK).send(deletedCard);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         next(new NotFoundError('Карточка с указанным _id не найдена'));
-      }
-      if (err instanceof mongoose.Error.CastError) {
+      } else if (err instanceof mongoose.Error.CastError) {
         next(new BadRequestError('Переданы некорректные данные карточки'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -69,11 +68,11 @@ const likeCard = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         next(new NotFoundError('Карточка с указанным _id не найдена'));
-      }
-      if (err instanceof mongoose.Error.CastError) {
+      } else if (err instanceof mongoose.Error.CastError) {
         next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -90,11 +89,11 @@ const dislikeCard = (req, res, next) => {
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
         next(new NotFoundError('Карточка с указанным _id не найдена'));
-      }
-      if (err instanceof mongoose.Error.CastError) {
+      } else if (err instanceof mongoose.Error.CastError) {
         next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
